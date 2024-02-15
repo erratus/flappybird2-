@@ -1,7 +1,8 @@
-# main.py
 import pygame
 import sys
 import random
+import pickle
+import os
 from draw_objects import draw_bird, draw_pipe
 from game_states import start_screen, game_over_screen
 
@@ -43,6 +44,9 @@ PLAYING = 1
 GAME_OVER = 2
 game_state = START_SCREEN
 
+# File to store game state and high score
+pickle_file = "game_state.pkl"
+
 def collision(pipe):
     if bird_x + bird_width > pipe[0] and bird_x < pipe[0] + pipe_width:
         if bird_y < pipe[1] or bird_y + bird_height > pipe[1] + pipe_gap:
@@ -50,8 +54,26 @@ def collision(pipe):
        
     return False
 
+def save_game_state():
+    global game_state, score
+    data = {'game_state': game_state, 'high_score': score}
+    with open(pickle_file, 'wb') as f:
+        pickle.dump(data, f)
+
+def load_game_state():
+    global game_state, score
+    if os.path.exists(pickle_file):
+        with open(pickle_file, 'rb') as f:
+            data = pickle.load(f)
+            game_state = data.get('game_state', START_SCREEN)
+            score = data.get('high_score', 0)
+    else:
+        game_state = START_SCREEN
+        score = 0
+
 def main():
     global bird_y, bird_speed, score, game_state
+    load_game_state()  # Load previous game state
     clock = pygame.time.Clock()
     run = True
 
@@ -107,6 +129,9 @@ def main():
             pygame.display.update()
         elif game_state == GAME_OVER:
             game_over_screen(win, WIDTH, HEIGHT, font, score)
+
+        # Save game state after each game action
+        save_game_state()
 
         clock.tick(30)
 
