@@ -2,7 +2,7 @@
 import pygame
 
 RED = (255, 0, 0)
-BLACK = (0, 0, 0)
+BLACK = (0, 10, 0)
 
 def draw_bird(win, x, y, width, height):
     pygame.draw.rect(win, RED, (x, y, width, height))

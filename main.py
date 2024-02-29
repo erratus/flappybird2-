@@ -3,7 +3,7 @@ import sys
 import random
 import pickle
 import os
-from draw_objects import draw_bird, draw_pipe
+from draw_objects import draw_pipe
 from game_states import start_screen, game_over_screen
 
 # Initialize Pygame
@@ -12,12 +12,17 @@ pygame.init()
 # Set up the game window
 WIDTH, HEIGHT = 400, 600
 win = pygame.display.set_mode((WIDTH, HEIGHT))
+#font_path = "path_to_your_font.ttf" 
+#font = pygame.font.Font(font_path, 36)
+
+# Set the caption font
 pygame.display.set_caption("Flappy Bird")
+#pygame.display.set_caption("Flappy Bird", font=font)
 BUTTON_WIDTH = 150
 BUTTON_HEIGHT = 50
 
 # assets
-background_image = pygame.image.load("assets/test.png") 
+background_image = pygame.image.load("assets/b2g.png") 
 background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
 
 # Colors
@@ -39,7 +44,7 @@ bird_sprite = pygame.transform.scale(bird_sprite, (bird_width, bird_height))
 # Pipe properties
 pipe_width = 70
 pipe_gap = 150
-pipe_speed = 3
+pipe_speed = 5
 pipes = []
 
 # Score
@@ -62,26 +67,43 @@ def collision(pipe):
 
     return False
 
-def save_game_state():
+
+        
+def save_game_state(highscore):
     global game_state, score
-    data = {'game_state': game_state, 'high_score': score}
+    if score>highscore:    
+        data = {'game_state': game_state, 'high_score': score}
+    else:
+        data = {'game_state': game_state, 'high_score': highscore}
     with open(pickle_file, 'wb') as f:
         pickle.dump(data, f)
 
+
+        
 def load_game_state():
     global game_state, score
-    if os.path.exists(pickle_file):
-        with open(pickle_file, 'rb') as f:
-            data = pickle.load(f)
-            game_state = data.get('game_state', START_SCREEN)
-            score = data.get('high_score', 0)
-    else:
+    try:
+        if os.path.exists(pickle_file):
+            with open(pickle_file, 'rb') as f:
+                data = pickle.load(f)
+                game_state = data.get('game_state', START_SCREEN)
+                score = data.get('high_score', 0)
+        else:
+            game_state = START_SCREEN
+            score = 0
+    except Exception as e:
+        print("Error occurred while loading game state:", e)
         game_state = START_SCREEN
         score = 0
+    return {'game_state': game_state, 'high_score': score}
+
 
 def main():
     global bird_y, bird_speed, score, game_state
-    load_game_state()  # Load previous game state
+    game_data = load_game_state()
+    game_state = START_SCREEN
+    high = game_data['high_score']
+    score = 0
     clock = pygame.time.Clock()
     run = True
 
@@ -98,9 +120,6 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and game_state == START_SCREEN:
                     game_state = PLAYING
-                if event.key == pygame.K_SPACE and game_state == GAME_OVER:
-                    game_state = PLAYING
-                    reset_game()
                 if event.key == pygame.K_ESCAPE and game_state == GAME_OVER:
                     run = False
                 if event.key == pygame.K_SPACE and game_state == PLAYING:
@@ -111,7 +130,11 @@ def main():
                         reset_game()
 
         if game_state == START_SCREEN:
-            start_screen(win, WIDTH, HEIGHT, font, frame_counter)
+            if high ==0:
+                h1 = None
+                start_screen(win, WIDTH, HEIGHT, font, frame_counter,h1)
+            else:
+                start_screen(win, WIDTH, HEIGHT, font, frame_counter,high)
             # Handle mouse clicks on buttons
             mouse_x, mouse_y = pygame.mouse.get_pos()
             if start_button_rect.collidepoint(mouse_x, mouse_y):
@@ -121,7 +144,7 @@ def main():
             elif exit_button_rect.collidepoint(mouse_x, mouse_y):
                 if pygame.mouse.get_pressed()[0]:  # Check left mouse button
                     run = False
-
+                    reset_game()
             frame_counter += 1  # Increment the frame counter for animation
             pygame.time.Clock().tick(30)
 
@@ -159,14 +182,17 @@ def main():
             pygame.display.update()
         elif game_state == GAME_OVER:
             win.blit(background_image, (0, 0))
-            game_over_screen(win, WIDTH, HEIGHT, font, score)
-
+            if score>high:
+                game_over_screen(win, WIDTH, HEIGHT, font, score)
+            else:
+                game_over_screen(win, WIDTH, HEIGHT, font, high)
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE]:
                 bird_speed = jump_force
-
+            save_game_state(high)
         # Save game state after each game action
-        save_game_state()
+        
+        save_game_state(high)
 
         clock.tick(30)
 

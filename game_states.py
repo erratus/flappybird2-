@@ -8,11 +8,13 @@ BUTTON_WIDTH = 150
 BUTTON_HEIGHT = 50
 ANIMATION_SPEED = 15  # Adjust as needed for the desired animation speed
 
-def start_screen(win, width, height, font, frame_counter):
+def start_screen(win, width, height, font, frame_counter,score):
     win.fill((202, 228, 241))
     title_text = font.render("Flappy Bird", True, (0, 0, 0))
     win.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 3))
-
+    if score: 
+        score_text = font.render("High - Score: " + str(score), True, (0, 0, 0))
+        win.blit(score_text, (width // 2 - score_text.get_width() // 2, height // 2 + 150))
     # Cycle through start button images
     start_button_image = start_button_images[frame_counter // ANIMATION_SPEED % len(start_button_images)]
     start_button_rect = start_button_image.get_rect(center=(width // 2, height // 2))
@@ -29,10 +31,10 @@ def start_screen(win, width, height, font, frame_counter):
 def game_over_screen(win, width, height, font, score):
     win.fill((202, 228, 241))
     game_over_text = font.render("Game Over", True, (0, 0, 0))
-    score_text = font.render("Score: " + str(score), True, (0, 0, 0))
     replay_text = font.render("Press ENTER to replay", True, (0, 0, 0))
     exit_text = font.render("Press ESC to exit", True, (0, 0, 0))
     win.blit(game_over_text, (width // 2 - game_over_text.get_width() // 2, height // 3))
+    score_text = font.render("High - Score: " + str(score), True, (0, 0, 0))
     win.blit(score_text, (width // 2 - score_text.get_width() // 2, height // 2))
     win.blit(replay_text, (width // 2 - replay_text.get_width() // 2, height // 2 + 50))
     win.blit(exit_text, (width // 2 - exit_text.get_width() // 2, height // 2 + 100))
