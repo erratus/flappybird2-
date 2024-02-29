@@ -4,7 +4,7 @@ import random
 import pickle
 import os
 from draw_objects import draw_bird, draw_pipe
-from game_states import start_screen, game_over_screen
+from game_states1 import start_screen, game_over_screen
 
 # Initialize Pygame
 pygame.init()
@@ -13,12 +13,6 @@ pygame.init()
 WIDTH, HEIGHT = 400, 600
 win = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Flappy Bird")
-BUTTON_WIDTH = 150
-BUTTON_HEIGHT = 50
-
-# assets
-background_image = pygame.image.load("assets/test.png") 
-background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
 
 # Colors
 WHITE = (255, 255, 255)
@@ -31,10 +25,8 @@ bird_height = 30
 bird_x = 50
 bird_y = HEIGHT // 2 - bird_height // 2
 bird_speed = 5
-gravity = 0.5
-jump_force = -9
-bird_sprite = pygame.image.load("assets/sprite.png")
-bird_sprite = pygame.transform.scale(bird_sprite, (bird_width, bird_height))
+gravity = 0.25
+jump_force = -7
 
 # Pipe properties
 pipe_width = 70
@@ -59,7 +51,7 @@ def collision(pipe):
     if bird_x + bird_width > pipe[0] and bird_x < pipe[0] + pipe_width:
         if bird_y < pipe[1] or bird_y + bird_height > pipe[1] + pipe_gap:
             return True
-
+       
     return False
 
 def save_game_state():
@@ -67,7 +59,9 @@ def save_game_state():
     data = {'game_state': game_state, 'high_score': score}
     with open(pickle_file, 'wb') as f:
         pickle.dump(data, f)
-
+    
+    
+    
 def load_game_state():
     global game_state, score
     if os.path.exists(pickle_file):
@@ -85,12 +79,6 @@ def main():
     clock = pygame.time.Clock()
     run = True
 
-    start_button_rect = pygame.Rect(WIDTH // 2 - BUTTON_WIDTH // 2, HEIGHT // 2, BUTTON_WIDTH, BUTTON_HEIGHT)
-    exit_button_rect = pygame.Rect(WIDTH // 2 - BUTTON_WIDTH // 2, HEIGHT // 2 + 2 * BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT)
-
-    mouse_x, mouse_y = 0, 0
-
-    frame_counter=0
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -111,28 +99,11 @@ def main():
                         reset_game()
 
         if game_state == START_SCREEN:
-            start_screen(win, WIDTH, HEIGHT, font, frame_counter)
-            # Handle mouse clicks on buttons
-            mouse_x, mouse_y = pygame.mouse.get_pos()
-            if start_button_rect.collidepoint(mouse_x, mouse_y):
-                if pygame.mouse.get_pressed()[0]:  # Check left mouse button
-                    game_state = PLAYING
-                    reset_game()
-            elif exit_button_rect.collidepoint(mouse_x, mouse_y):
-                if pygame.mouse.get_pressed()[0]:  # Check left mouse button
-                    run = False
-
-            frame_counter += 1  # Increment the frame counter for animation
-            pygame.time.Clock().tick(30)
-
-
+            start_screen(win, WIDTH, HEIGHT, font)
         elif game_state == PLAYING:
-            win.blit(background_image, (0, 0))
             # Move bird
             bird_speed += gravity
             bird_y += bird_speed
-            if bird_y > HEIGHT:
-                game_state = GAME_OVER
 
             # Generate pipes
             if len(pipes) == 0 or pipes[-1][0] < WIDTH - pipe_gap * 2:
@@ -151,19 +122,15 @@ def main():
                     game_state = GAME_OVER
 
             # Draw everything
-            win.blit(bird_sprite, (bird_x, bird_y))
+            win.fill(WHITE)
+            draw_bird(win, bird_x, bird_y, bird_width, bird_height)
             for pipe in pipes:
                 draw_pipe(win, pipe[0], pipe[1], pipe[1], pipe_gap, pipe_width, HEIGHT)
             score_text = font.render(str(score), True, WHITE)
             win.blit(score_text, (WIDTH//2 - score_text.get_width()//2, 50))
             pygame.display.update()
         elif game_state == GAME_OVER:
-            win.blit(background_image, (0, 0))
             game_over_screen(win, WIDTH, HEIGHT, font, score)
-
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_SPACE]:
-                bird_speed = jump_force
 
         # Save game state after each game action
         save_game_state()
