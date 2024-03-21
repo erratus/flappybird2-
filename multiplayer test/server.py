@@ -39,7 +39,9 @@ while True:
         print("Connection from:", addr)
 
         userdata = c.recv(1024).decode("utf-8")
+
         spl = userdata.split(":")
+        # print("User data = ",spl)
 
         if spl[-1] == "0":
             mesaj = "id:" + str(cli_data_next_count)
@@ -51,7 +53,7 @@ while True:
             cli_datas[int(spl[-1])] = userdata
             c.send(re_message(cli_datas).encode("utf-8"))
 
-        # print(cli_datas)
+        print(cli_datas)
         c.close()
 
     except socket.error as e:
