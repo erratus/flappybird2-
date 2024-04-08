@@ -63,7 +63,7 @@ def send_pos():
 send_pos()
 
 while run:
-    pygame.time.delay(2000)
+    pygame.time.delay(20)
     send_pos()
 
     for event in pygame.event.get():

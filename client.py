@@ -1,5 +1,6 @@
 import socket
 import threading
+import time
 import pygame
 import sys
 import random
@@ -17,35 +18,9 @@ client = socket.socket()
 client.connect((SERVER, PORT))
 
 user_id = 0
-ready = 0
+ready = 1
 birds = []
-
-name = input("Enter your Name - ")
-def send_pos(s,bird_y):
-    global name, user_id,ready
-    while True:
-        try:
-            send_text = name  + ":" + str(bird_y) + ":" + str(ready) + ":" + str(user_id)
-            s.sendall(send_text.encode("utf-8"))
-            
-        except socket.error as msg:
-            print("[Server aktif değil.] Mesaj:", msg)
-
-
-def receive_instructions(s):
-    global user_id,ready ,birds
-    
-    while True:
-        yanit = s.recv(1024).decode("utf-8")
-        print(yanit)
-        spl = yanit.split(":")
-        
-        if spl[0] == "id":
-            user_id = int(spl[-1])
-        elif spl[0] == "ready":
-            ready = int(spl[-1])
-        else:
-            birds = yanit.split(";")
+name = "Akash"
 
 
 # Initialize Pygame
@@ -97,7 +72,7 @@ font = pygame.font.SysFont(None, 50)
 START_SCREEN = 0
 PLAYING = 1
 GAME_OVER = 2
-game_state = START_SCREEN
+game_state = -1
 
 # File to store game state and high score
 pickle_file = "game_state.pkl"
@@ -147,14 +122,53 @@ def load_game_state():
     return {"game_state": game_state, "high_score": score}
 
 
-def main():
-    global bird_y, bird_speed, score, game_state, ready
-    # Start threads for sending data and receiving instructions
+def send_pos(s, bird_y):
+    global name, user_id, ready
+    try:
+        if user_id == 0 or ready == 2 or ready == 1:
+            receive_instructions(s)
+        if ready == 3:
+            send_text = name + ":" + str(bird_y) + ":" + str(ready) + ":" + str(user_id)
+            s.send(send_text.encode("utf-8"))
+            time.sleep(1.3)
+            receive_instructions(s)
+        if ready == 0:
+            ready = int(input("Are you ready?"))
+            send_text = name + ":" + str(bird_y) + ":" + str(ready) + ":" + str(user_id)
+            s.send(send_text.encode("utf-8"))
+    except socket.error as msg:
+        print("Mesaj:", msg)
 
-    send_thread = threading.Thread(target=send_pos(client,bird_y))
-    send_thread.start()
-    recv_thread = threading.Thread(target=receive_instructions(client))
-    recv_thread.start()
+
+def receive_instructions(s):
+    global user_id, ready, birds
+    while True:
+        try:
+            yanit = s.recv(1024).decode("utf-8")
+            if yanit == "START":
+                ready = 3
+                break
+            spl = yanit.split(":")
+            if spl[0] == "id":
+                user_id = int(spl[-1])
+                break
+            elif spl[0] == "ready":
+                ready = int(spl[-1])
+                break
+            else:
+                birds = yanit.split(";")
+                print(birds)
+                break
+        except socket.error as msg:
+            print("Mesaj:", msg)
+            break
+
+
+def main():
+    global bird_y, bird_speed, score, game_state, ready, birds, run
+    # Start threads for sending data and receiving instructions
+    send_text = name + ":" + str(bird_y) + ":" + str(ready) + ":" + str(user_id)
+    client.send(send_text.encode("utf-8"))
 
     game_data = load_game_state()
     game_state = START_SCREEN
@@ -177,6 +191,7 @@ def main():
 
     frame_counter = 0
     while run:
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -212,6 +227,7 @@ def main():
             pygame.time.Clock().tick(30)
 
         elif game_state == PLAYING:
+            send_pos(client, bird_y)
             win.blit(background_image, (0, 0))
             # Move bird
             bird_speed += gravity
@@ -235,7 +251,15 @@ def main():
                 if collision(pipe):
                     game_state = GAME_OVER
 
-            # Draw everything
+                    # Draw everything
+            # name:birdy:ready:id
+            for i in birds:
+                if i != "0":
+                    spl = i.split(":")
+                    if int(spl[-1]) != user_id:
+                        if int(spl[-2]) != 0:
+                            win.blit(bird_sprite, (bird_x, int(spl[1])))
+
             win.blit(bird_sprite, (bird_x, bird_y))
             for pipe in pipes:
                 draw_pipe(win, pipe[0], pipe[1], pipe[1], pipe_gap, pipe_width, HEIGHT)
