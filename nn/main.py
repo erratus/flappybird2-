@@ -1,5 +1,3 @@
-import socket
-import time
 import pygame
 import sys
 import random
@@ -7,20 +5,6 @@ import pickle
 import os
 from draw_objects import draw_pipe, draw_bird
 from game_states import start_screen, game_over_screen
-
-# Server configuration
-SERVER = "127.0.0.1"
-PORT = 5051
-
-# Create a TCP socket
-# client = socket.socket()
-# client.connect((SERVER, PORT))
-
-user_id = 0
-ready = 0
-birds = []
-name = "Akash"
-
 
 # Initialize Pygame
 pygame.init()
@@ -71,8 +55,8 @@ font = pygame.font.SysFont(None, 50)
 START_SCREEN = 0
 PLAYING = 1
 GAME_OVER = 2
-game_state = -1
-fps = 30
+game_state = START_SCREEN
+
 # File to store game state and high score
 pickle_file = "game_state.pkl"
 
@@ -95,14 +79,6 @@ def save_game_state(highscore):
         pickle.dump(data, f)
 
 
-def reset_game():
-    global bird_y, bird_speed, pipes, score
-    bird_y = HEIGHT // 2 - bird_height // 2
-    bird_speed = 5
-    pipes = []
-    score = 0
-
-
 def load_game_state():
     global game_state, score
     try:
@@ -121,52 +97,8 @@ def load_game_state():
     return {"game_state": game_state, "high_score": score}
 
 
-def exitserver():
-    s = socket.socket()
-
-    try:
-        s.connect((SERVER, PORT))
-        send_text = "Byebye" ":" + str(user_id)
-        s.sendall(send_text.encode("utf-8"))
-        s.close()
-    except socket.error as msg:
-        print("Mesag:", msg)
-        s.close()
-
-
-def send_pos():
-    # time.sleep(0.3)
-    global name, user_id, ready, bird_y, birds
-    s = socket.socket()
-    try:
-        s.connect((SERVER, PORT))
-        send_text = name + ":" + str(bird_y) + ":" + str(ready) + ":" + str(user_id)
-        s.sendall(send_text.encode("utf-8"))
-        yanit = s.recv(1024).decode("utf-8")
-        if yanit == "START":
-            ready = 3
-        spl = yanit.split(":")
-        if spl[0] == "id":
-            user_id = int(spl[-1])
-        elif spl[0] == "ready":
-            ready = int(spl[-1])
-        else:
-            birds = yanit.split(";")
-            # print(birds)
-        s.close()
-    except socket.error as msg:
-        print("Mesag:", msg)
-        exitserver()
-        s.close()
-
-
-send_pos()
-
-
 def main():
-    global bird_y, bird_speed, score, game_state, ready, birds, run
-    # Start threads for sending data and receiving instructions
-
+    global bird_y, bird_speed, score, game_state
     game_data = load_game_state()
     game_state = START_SCREEN
     high = game_data["high_score"]
@@ -188,8 +120,6 @@ def main():
 
     frame_counter = 0
     while run:
-        if ready == 0:
-            send_pos()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -198,7 +128,6 @@ def main():
                     game_state = PLAYING
                 if event.key == pygame.K_ESCAPE and game_state == GAME_OVER:
                     run = False
-                    exitserver()
                 if event.key == pygame.K_SPACE and game_state == PLAYING:
                     bird_speed = jump_force
                 if event.key == pygame.K_RETURN:
@@ -222,13 +151,11 @@ def main():
                 if pygame.mouse.get_pressed()[0]:  # Check left mouse button
                     run = False
                     reset_game()
-                    exitserver()
-
             frame_counter += 1  # Increment the frame counter for animation
             pygame.time.Clock().tick(30)
 
         elif game_state == PLAYING:
-            win.blit(background_image, (0, 0))
+            win.blit(background_image, (0, 0))  
             # Move bird
             bird_speed += gravity
             bird_y += bird_speed
@@ -251,24 +178,19 @@ def main():
                 if collision(pipe):
                     game_state = GAME_OVER
 
-                    # Draw everything
-            # name:birdy:ready:id
-            for i in birds:
-                if i != "0":
-                    spl = i.split(":")
-                    if int(spl[-1]) != user_id:
-                        if int(spl[-2]) == 0:
-                            draw_bird(
-                                win, bird_x, float(spl[1]), bird_width, int(spl[-1])
-                            )
-
-            win.blit(bird_sprite, (bird_x, bird_y))
+            # Draw everything
+            #bird
+            draw_bird(win, bird_sprite, bird_x, bird_y)
+            #pipes
             for pipe in pipes:
                 draw_pipe(win, pipe[0], pipe[1], pipe[1], pipe_gap, pipe_width, HEIGHT)
 
+            #score text
             score_text = font.render(str(score), True, WHITE)
             win.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2, 50))
             pygame.display.update()
+
+        # Game Over
         elif game_state == GAME_OVER:
             win.blit(background_image, (0, 0))
             if score > high:
@@ -283,13 +205,19 @@ def main():
 
         save_game_state(high)
 
-        clock.tick(fps)
+        clock.tick(30)
 
     pygame.quit()
-
     sys.exit()
+
+
+def reset_game():
+    global bird_y, bird_speed, pipes, score
+    bird_y = HEIGHT // 2 - bird_height // 2
+    bird_speed = 5
+    pipes = []
+    score = 0
 
 
 if __name__ == "__main__":
     main()
-    exitserver()

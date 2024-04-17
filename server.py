@@ -4,11 +4,21 @@ import time
 
 # Server configuration
 HOST = "127.0.0.1"
-PORT = 5050
+PORT = 5051
+try:
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print("Socket created")
 
-# Create a udp socket
-server = socket.socket()
-server.bind((HOST, PORT))
+    server.bind((HOST, PORT))
+    print("Socket binding to address {} and port {}".format(HOST, PORT))
+
+    server.listen(5)  # Listen for up to 5 incoming connections
+    print("Socket listening")
+
+except socket.error as msg:
+    print("Error:", msg)
+    exit()
+
 
 # Game state variables
 clients_ready = 0
@@ -34,7 +44,7 @@ def re_message(cli_datas):
     return mesaj
 
 
-def handle_client(conn, addr):
+def handle_client(conn,addr):
     global clients_ready, birds, cli_data_next_count
 
     while True:
@@ -61,29 +71,42 @@ def handle_client(conn, addr):
             else:
                 birds[int(spl[-1])] = userdata
                 conn.send(re_message(birds).encode("utf-8"))
-
-        except Exception as e:
-            print("Line number 66", e)
+            if spl[0]  == "Byebye":
+                birds.pop(int(spl[-1]))
+                cli_data_next_count -= 1
+                clients_ready -= 1
+                print(birds)
+                
             conn.close()
-            cli_data_next_count -= 1
-            clients_ready -= 1
-            print("Players Left - ", cli_data_next_count - 1)
-            break
-
-    conn.close()
+            
+            
+        except Exception as e:
+            if "[WinError 10038]" not in str(e):  # Check for WinError code
+               print("Line number 66", e)        
+               cli_data_next_count -= 1
+               clients_ready -= 1
+               print("Players Left - ", cli_data_next_count - 1)
+               conn.close()
+            if "[WinError 10038]" in str(e):
+                clients.remove(addr)
+      
+      
 
 
 def start_server():
     server.listen()
     print(f"[LISTENING] Server is listening on {HOST}:{PORT}")
-
     while True:
-        conn, addr = server.accept()
-        clients.append(conn)
-        thread = threading.Thread(target=handle_client, args=(conn, addr))
-        thread.start()
-        print(f"[ACTIVE CONNECTIONS] {len(clients)}")
-
+        try:
+            conn, addr = server.accept()
+            print("Connection from:", addr)
+            clients.append(addr)
+            handle_client(conn,addr)
+        
+            print(f"[ACTIVE CONNECTIONS] {len(clients)}")  
+        except:
+            pass
+    
 
 # Start the server
 if __name__ == "__main__":
