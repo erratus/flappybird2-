@@ -3,10 +3,11 @@ import time
 import pygame
 import sys
 import random
-import pickle
 import os
 from draw_objects import draw_pipe, draw_bird
 from game_states import start_screen, game_over_screen
+from dbfn import db_init, db_print, save_game_state, load_game_state
+
 
 # Server configuration
 SERVER = "127.0.0.1"
@@ -73,8 +74,7 @@ PLAYING = 1
 GAME_OVER = 2
 game_state = -1
 fps = 30
-# File to store game state and high score
-pickle_file = "game_state.pkl"
+fpst = 0.3
 
 
 def collision(pipe):
@@ -85,40 +85,12 @@ def collision(pipe):
     return False
 
 
-def save_game_state(highscore):
-    global game_state, score
-    if score > highscore:
-        data = {"game_state": game_state, "high_score": score}
-    else:
-        data = {"game_state": game_state, "high_score": highscore}
-    with open(pickle_file, "wb") as f:
-        pickle.dump(data, f)
-
-
 def reset_game():
     global bird_y, bird_speed, pipes, score
     bird_y = HEIGHT // 2 - bird_height // 2
     bird_speed = 5
     pipes = []
     score = 0
-
-
-def load_game_state():
-    global game_state, score
-    try:
-        if os.path.exists(pickle_file):
-            with open(pickle_file, "rb") as f:
-                data = pickle.load(f)
-                game_state = data.get("game_state", START_SCREEN)
-                score = data.get("high_score", 0)
-        else:
-            game_state = START_SCREEN
-            score = 0
-    except Exception as e:
-        print("Error occurred while loading game state:", e)
-        game_state = START_SCREEN
-        score = 0
-    return {"game_state": game_state, "high_score": score}
 
 
 def exitserver():
@@ -135,7 +107,7 @@ def exitserver():
 
 
 def send_pos():
-    # time.sleep(0.3)
+    time.sleep(fpst)
     global name, user_id, ready, bird_y, birds
     s = socket.socket()
     try:
@@ -167,9 +139,8 @@ def main():
     global bird_y, bird_speed, score, game_state, ready, birds, run
     # Start threads for sending data and receiving instructions
 
-    game_data = load_game_state()
     game_state = START_SCREEN
-    high = game_data["high_score"]
+    high = load_game_state(score)
     score = 0
     clock = pygame.time.Clock()
     run = True
@@ -193,11 +164,13 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and game_state == START_SCREEN:
                     game_state = PLAYING
                 if event.key == pygame.K_ESCAPE and game_state == GAME_OVER:
                     run = False
+
                     exitserver()
                 if event.key == pygame.K_SPACE and game_state == PLAYING:
                     bird_speed = jump_force
@@ -278,15 +251,14 @@ def main():
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE]:
                 bird_speed = jump_force
-            save_game_state(high)
+
         # Save game state after each game action
 
-        save_game_state(high)
+        save_game_state()
 
         clock.tick(fps)
 
     pygame.quit()
-
     sys.exit()
 
 
