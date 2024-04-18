@@ -5,7 +5,7 @@ import sys
 import random
 import os
 from draw_objects import draw_pipe, draw_bird
-from game_states import start_screen, game_over_screen
+from game_states import start_screen, game_over_screen, wait_screen
 from dbfn import db_init, db_print, save_game_state, load_game_state
 
 
@@ -72,6 +72,7 @@ font = pygame.font.SysFont(None, 50)
 START_SCREEN = 0
 PLAYING = 1
 GAME_OVER = 2
+WAITING = 3
 game_state = -1
 fps = 30
 fpst = 0.3
@@ -107,7 +108,7 @@ def exitserver():
 
 
 def send_pos():
-    time.sleep(fpst)
+    # time.sleep(fpst)
     global name, user_id, ready, bird_y, birds
     s = socket.socket()
     try:
@@ -127,12 +128,34 @@ def send_pos():
             # print(birds)
         s.close()
     except socket.error as msg:
-        print("Mesag:", msg)
-        exitserver()
+        if "[WinError 10061]" not in str(msg):
+            exitserver()
+        else:
+            print("Waiting for connection for server..")
         s.close()
 
 
 send_pos()
+
+
+def recieve_ready():
+    global ready
+    s = socket.socket()
+    s.settimeout(0.1)
+    try:
+        s.connect((SERVER, PORT))
+        yanit = s.recv(1024).decode("utf-8")
+        if yanit == "START":
+            ready = 3
+        ready = 1
+        s.close()
+
+    except socket.error as msg:
+        if "[WinError 10061]" not in str(msg):
+            exitserver()
+        else:
+            print("Waiting for connection for server..")
+        s.close()
 
 
 def main():
@@ -148,6 +171,12 @@ def main():
     start_button_rect = pygame.Rect(
         WIDTH // 2 - BUTTON_WIDTH // 2, HEIGHT // 2, BUTTON_WIDTH, BUTTON_HEIGHT
     )
+    ready_button_rect = pygame.Rect(
+        WIDTH // 2 - BUTTON_WIDTH // 2,
+        HEIGHT // 2 + 3 * BUTTON_HEIGHT,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT,
+    )
     exit_button_rect = pygame.Rect(
         WIDTH // 2 - BUTTON_WIDTH // 2,
         HEIGHT // 2 + 2 * BUTTON_HEIGHT,
@@ -159,18 +188,15 @@ def main():
 
     frame_counter = 0
     while run:
-        if ready == 0:
-            send_pos()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and game_state == START_SCREEN:
-                    game_state = PLAYING
+                    game_state = WAITING
                 if event.key == pygame.K_ESCAPE and game_state == GAME_OVER:
                     run = False
-
                     exitserver()
                 if event.key == pygame.K_SPACE and game_state == PLAYING:
                     bird_speed = jump_force
@@ -180,27 +206,32 @@ def main():
                         reset_game()
 
         if game_state == START_SCREEN:
+
             if high == 0:
                 h1 = None
-                start_screen(win, WIDTH, HEIGHT, font, frame_counter, h1)
+                start_screen(win, WIDTH, HEIGHT, font, frame_counter, h1, ready)
             else:
-                start_screen(win, WIDTH, HEIGHT, font, frame_counter, high)
+                start_screen(win, WIDTH, HEIGHT, font, frame_counter, high, ready)
             # Handle mouse clicks on buttons
             mouse_x, mouse_y = pygame.mouse.get_pos()
             if start_button_rect.collidepoint(mouse_x, mouse_y):
                 if pygame.mouse.get_pressed()[0]:  # Check left mouse button
-                    game_state = PLAYING
+                    game_state = WAITING
                     reset_game()
             elif exit_button_rect.collidepoint(mouse_x, mouse_y):
                 if pygame.mouse.get_pressed()[0]:  # Check left mouse button
                     run = False
                     reset_game()
                     exitserver()
+            elif ready_button_rect.collidepoint(mouse_x, mouse_y):
+                if pygame.mouse.get_pressed()[0]:  # Check left mouse button
+                    ready = 1
 
             frame_counter += 1  # Increment the frame counter for animation
             pygame.time.Clock().tick(30)
 
         elif game_state == PLAYING:
+            send_pos()
             win.blit(background_image, (0, 0))
             # Move bird
             bird_speed += gravity
@@ -251,13 +282,16 @@ def main():
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE]:
                 bird_speed = jump_force
-
-        # Save game state after each game action
-
-        save_game_state()
+        elif game_state == WAITING:
+            wait_screen(win, WIDTH, HEIGHT, font, frame_counter)
+            recieve_ready()
+            if ready == 3:
+                game_state = PLAYING
+            frame_counter += 1  # Increment the frame counter for animation
+            pygame.time.Clock().tick(30)
 
         clock.tick(fps)
-
+    save_game_state(score)
     pygame.quit()
     sys.exit()
 

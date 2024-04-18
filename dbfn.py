@@ -35,11 +35,13 @@ def save_game_state(score):
     cursor.execute("INSERT INTO SCORE(score) VALUES (?)", (score,))
     cursor.execute("SELECT MAX(score) FROM SCORE")
     highscore = cursor.fetchone()[0]
-    print(highscore)
     connection.commit()
     connection.close()
 
+
 save_game_state(10)
+
+
 def load_game_state(score):
     connection = sqlite3.connect(DB_FILE)
     cursor = connection.cursor()
