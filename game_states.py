@@ -2,16 +2,20 @@
 import pygame
 
 start_button_images = [
-    pygame.image.load("assets/b1.png"),
-    pygame.image.load("assets/b1C.png"),
+    pygame.image.load("assets/play1.png"),
+    pygame.image.load("assets/play.png"),
 ]
 exit_button_images = [
-    pygame.image.load("assets/b2.png"),
-    pygame.image.load("assets/b2C.png"),
+    pygame.image.load("assets/exit.png"),
+    pygame.image.load("assets/exit1.png"),
 ]
 ready_button_images = [
-    pygame.image.load("assets/b2.png"),
-    pygame.image.load("assets/b2C.png"),
+    pygame.image.load("assets/start1.png"),
+    pygame.image.load("assets/start.png"),
+]
+home_background_image=[
+    pygame.image.load("assets/homebg.png"),
+    pygame.image.load("assets/homebg1.png")
 ]
 
 BUTTON_WIDTH = 150
@@ -28,14 +32,19 @@ def wait_screen(win, width, height, font, framecounter):
 
 
 def start_screen(win, width, height, font, frame_counter, score, ready):
-    win.fill((202, 228, 241))
+
+    # Cycle through home background images
+    home_background_image_index = frame_counter // ANIMATION_SPEED % len(home_background_image)
+    home_bg_image = home_background_image[home_background_image_index]
+    win.blit(home_bg_image, (0, 0))
+    
     title_text = font.render("Flappy Bird", True, (0, 0, 0))
-    win.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 3))
+    win.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 3-150))
+    
     if score:
         score_text = font.render("High - Score: " + str(score), True, (0, 0, 0))
-        win.blit(
-            score_text, (width // 2 - score_text.get_width() // 2, height // 2 + 150)
-        )
+        win.blit(score_text, (width // 2 - score_text.get_width() // 2, height // 2 + 150))
+    
     # Cycle through start button images
     start_button_image = start_button_images[
         frame_counter // ANIMATION_SPEED % len(start_button_images)
@@ -49,7 +58,7 @@ def start_screen(win, width, height, font, frame_counter, score, ready):
             frame_counter // ANIMATION_SPEED % len(ready_button_images)
         ]
         ready_button_rect = ready_button_image.get_rect(
-            center=(width // 2, height // 2 + BUTTON_HEIGHT * 3)
+            center=(width // 2, height // 2 + BUTTON_HEIGHT * 3+100)
         )
         win.blit(ready_button_image, ready_button_rect.topleft)
 
@@ -63,6 +72,7 @@ def start_screen(win, width, height, font, frame_counter, score, ready):
     win.blit(exit_button_image, exit_button_rect.topleft)
 
     pygame.display.update()
+
 
 
 def game_over_screen(win, width, height, font, score):
