@@ -35,8 +35,8 @@ win = pygame.display.set_mode((WIDTH, HEIGHT))
 # Set the caption font
 pygame.display.set_caption("Flappy Bird")
 # pygame.display.set_caption("Flappy Bird", font=font)
-BUTTON_WIDTH = 150
-BUTTON_HEIGHT = 50
+BUTTON_WIDTH = 120
+BUTTON_HEIGHT = 40
 
 # assets
 background_image = pygame.image.load("assets/b2g.png")
@@ -72,7 +72,7 @@ font = pygame.font.SysFont(None, 50)
 START_SCREEN = 0
 PLAYING = 1
 GAME_OVER = 2
-WAITING = 4
+WAITING = 3
 game_state = -1
 fps = 30
 fpst = 0.3
@@ -168,18 +168,16 @@ def main():
     clock = pygame.time.Clock()
     run = True
 
-    start_button_rect = pygame.Rect(
-        WIDTH // 2 - BUTTON_WIDTH // 2, HEIGHT // 2, BUTTON_WIDTH, BUTTON_HEIGHT
-    )
+    start_button_rect = pygame.Rect(WIDTH // 2 - BUTTON_WIDTH // 2 - 100, HEIGHT // 2 + 210, BUTTON_WIDTH, BUTTON_HEIGHT)
+    NN_button_rect = pygame.Rect(WIDTH // 2 - BUTTON_WIDTH // 2 - 100, HEIGHT // 2 + BUTTON_HEIGHT * 3 + 140, BUTTON_WIDTH, BUTTON_HEIGHT)
+    exit_button_rect = pygame.Rect(WIDTH // 2 - BUTTON_WIDTH // 2 + 100, HEIGHT // 2 + BUTTON_HEIGHT * 2 + 130, BUTTON_WIDTH, BUTTON_HEIGHT)
+    '''
+NEW RECT FOR READY BUTTON
+ready_button_rect = pygame.Rect(WIDTH // 2 + 100, HEIGHT // 2 + BUTTON_HEIGHT * 3 + 150, BUTTON_WIDTH, BUTTON_HEIGHT)
+'''
     ready_button_rect = pygame.Rect(
         WIDTH // 2 - BUTTON_WIDTH // 2,
         HEIGHT // 2 + 3 * BUTTON_HEIGHT,
-        BUTTON_WIDTH,
-        BUTTON_HEIGHT,
-    )
-    exit_button_rect = pygame.Rect(
-        WIDTH // 2 - BUTTON_WIDTH // 2,
-        HEIGHT // 2 + 2 * BUTTON_HEIGHT,
         BUTTON_WIDTH,
         BUTTON_HEIGHT,
     )
@@ -285,8 +283,8 @@ def main():
         elif game_state == WAITING:
             wait_screen(win, WIDTH, HEIGHT, font, frame_counter)
             recieve_ready()
-            if ready == 3:
-                game_state = PLAYING
+            # if ready == 3:
+            game_state = PLAYING
             frame_counter += 1  # Increment the frame counter for animation
             pygame.time.Clock().tick(30)
 

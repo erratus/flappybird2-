@@ -18,8 +18,8 @@ win = pygame.display.set_mode((WIDTH, HEIGHT))
 # Set the caption font
 pygame.display.set_caption("Flappy Bird")
 #pygame.display.set_caption("Flappy Bird", font=font)
-BUTTON_WIDTH = 150
-BUTTON_HEIGHT = 50
+BUTTON_WIDTH = 120
+BUTTON_HEIGHT = 40
 
 # assets
 background_image = pygame.image.load("assets/b2g.png") 
@@ -38,7 +38,7 @@ bird_y = HEIGHT // 2 - bird_height // 2
 bird_speed = 5
 gravity = 0.5
 jump_force = -9
-bird_sprite = pygame.image.load("assets/sprite.png")
+bird_sprite = pygame.image.load("assets/fly1.png")
 bird_sprite = pygame.transform.scale(bird_sprite, (bird_width, bird_height))
 
 # Pipe properties
@@ -59,6 +59,7 @@ game_state = START_SCREEN
 
 # File to store game state and high score
 pickle_file = "game_state.pkl"
+
 
 def collision(pipe):
     if bird_x + bird_width > pipe[0] and bird_x < pipe[0] + pipe_width:
@@ -97,6 +98,8 @@ def load_game_state():
         score = 0
     return {'game_state': game_state, 'high_score': score}
 
+def NN():
+    pass
 
 def main():
     global bird_y, bird_speed, score, game_state
@@ -107,8 +110,10 @@ def main():
     clock = pygame.time.Clock()
     run = True
 
-    start_button_rect = pygame.Rect(WIDTH // 2 - BUTTON_WIDTH // 2, HEIGHT // 2, BUTTON_WIDTH, BUTTON_HEIGHT)
-    exit_button_rect = pygame.Rect(WIDTH // 2 - BUTTON_WIDTH // 2, HEIGHT // 2 + 2 * BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT)
+    start_button_rect = pygame.Rect(WIDTH // 2 - BUTTON_WIDTH // 2 - 100, HEIGHT // 2 + 210, BUTTON_WIDTH, BUTTON_HEIGHT)
+    NN_button_rect = pygame.Rect(WIDTH // 2 - BUTTON_WIDTH // 2 - 100, HEIGHT // 2 + BUTTON_HEIGHT * 3 + 140, BUTTON_WIDTH, BUTTON_HEIGHT)
+    exit_button_rect = pygame.Rect(WIDTH // 2 - BUTTON_WIDTH // 2 + 100, HEIGHT // 2 + BUTTON_HEIGHT * 2 + 130, BUTTON_WIDTH, BUTTON_HEIGHT)
+
 
     mouse_x, mouse_y = 0, 0
 
@@ -179,7 +184,13 @@ def main():
                 draw_pipe(win, pipe[0], pipe[1], pipe[1], pipe_gap, pipe_width, HEIGHT)
             score_text = font.render(str(score), True, WHITE)
             win.blit(score_text, (WIDTH//2 - score_text.get_width()//2, 50))
+
+            if NN_button_rect.collidepoint(mouse_x, mouse_y):
+                if pygame.mouse.get_pressed()[0]:  # Check left mouse button
+                    NN()
+
             pygame.display.update()
+
         elif game_state == GAME_OVER:
             win.blit(background_image, (0, 0))
             if score>high:

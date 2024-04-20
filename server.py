@@ -21,7 +21,7 @@ except socket.error as msg:
 
 
 # Game state variables
-clients_ready = 3
+clients_ready = 0
 birds = []
 birds.append(0)
 cli_data_next_count = 1
